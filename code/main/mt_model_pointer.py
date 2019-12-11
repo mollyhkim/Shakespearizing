@@ -210,7 +210,7 @@ class RNNModel:
 	def initEmbeddings(self, emb_scope, token_vocab_size, embeddings_dim, pretrained_embeddings_are_trainable=True, reuse=False, pretrained_embeddings=None):
 		#print "pretrained_embeddings_are_trainable = ",pretrained_embeddings_are_trainable
 		with tf.variable_scope(emb_scope, reuse=reuse):
-			if pretrained_embeddings.all()!=None:
+			if pretrained_embeddings.any()!=None:
 				token_emb_mat = tf.get_variable("emb_mat", shape=[token_vocab_size, embeddings_dim], dtype='float', initializer=tf.constant_initializer(np.array(pretrained_embeddings)), trainable=pretrained_embeddings_are_trainable )
 				token_emb_mat = tf.concat( [tf.zeros([1, embeddings_dim]), tf.slice(token_emb_mat, [1,0],[-1,-1]) ], axis=0 )	
 			else:
@@ -377,7 +377,6 @@ class RNNModel:
 				self.decoder_token_emb_mat = token_emb_mat = self.initEmbeddings(emb_scope, token_vocab_size, embeddings_dim, reuse=reuse, pretrained_embeddings=pretrained_embeddings, pretrained_embeddings_are_trainable=config['pretrained_embeddings_are_trainable'])
 
 		with tf.variable_scope('decoder',reuse=reuse):
-				
 			# lstm 
 			lstm_cell = rnn.BasicLSTMCell(lstm_cell_size, forget_bias=1.0, state_is_tuple=True, reuse=reuse)
 

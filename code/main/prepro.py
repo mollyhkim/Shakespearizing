@@ -56,19 +56,22 @@ class PreProcessing:
 			ret.append(sequence)
 		return np.array(ret)
 
-	def preprocess(self, text_rows):
-		return [row.strip().lower().split(' ') for row in text_rows]
+	def preprocess(self, text_rows, split):
+		if split == "testNonShakespeare":
+			return [row.strip().lower().replace('"', '').replace(',', " ,").replace(';', " ;").replace(".", " .").replace("?", " ?").replace("!", " !").split(' ') for row in text_rows]
+		else:
+			return [row.strip().lower().split(' ') for row in text_rows]
 
 	def loadVocab(self, split):
 
 		print "======================================================= loadData: split = ",split
-		inp_src = config.data_dir + split + ".original" + ".nltktok" #".modern"
-		out_src = config.data_dir + split + ".modern" + ".nltktok" #".original"
+		inp_src = config.data_dir + "redistributed." + split + ".original" + ".nltktok" #".modern"
+		out_src = config.data_dir + "redistributed." + split + ".modern" + ".nltktok" #".original"
 		inp_data = open(inp_src,"r").readlines()
 		out_data = open(out_src,"r").readlines()
 		
-		inputs = self.preprocess(inp_data)
-		outputs = self.preprocess(out_data)
+		inputs = self.preprocess(inp_data, split)
+		outputs = self.preprocess(out_data, split)
 		
 		word_to_idx = self.word_to_idx
 		idx_to_word = self.idx_to_word
@@ -130,13 +133,16 @@ class PreProcessing:
 	def loadData(self, split):
 
 		print "======================================================= loadData: split = ",split
-		inp_src = config.data_dir + split + ".original" + ".nltktok" #".modern"
-		out_src = config.data_dir + split + ".modern" + ".nltktok" #".original"
+		##### molls altered
+		inp_src = config.data_dir + "redistributed." + split + ".original.nltktok" #".modern"#config.data_dir + mollsexperiment + ".original.nltktok" 
+		out_src = config.data_dir + "redistributed." + split + ".modern.nltktok" #".original" #config.data_dir + mollsexperiment + ".modern.nltktok" 
+		##### molls altered
+		
 		inp_data = open(inp_src,"r").readlines()
 		out_data = open(out_src,"r").readlines()
 		
-		inputs = self.preprocess(inp_data)
-		outputs = self.preprocess(out_data)
+		inputs = self.preprocess(inp_data, split)
+		outputs = self.preprocess(out_data, split)
 		
 		word_to_idx = self.word_to_idx
 		idx_to_word = self.idx_to_word
@@ -155,6 +161,11 @@ class PreProcessing:
 				else:
 					tmp.append(word_to_idx[token])
 			tmp.append(word_to_idx[self.sent_end])
+			#####
+			# print("printing og text and temp after word to idx")
+			# print(text)
+			# print(tmp)
+			#####
 			sequences_input.append(tmp)
 
 		texts = outputs
@@ -175,7 +186,7 @@ class PreProcessing:
 
 		print "Printing few sample sequences... "
 		print sequences_input[0],":", self.fromIdxSeqToVocabSeq(sequences_input[0]), "---", sequences_output[0], ":", self.fromIdxSeqToVocabSeq(sequences_output[0])
-		print sequences_input[113], sequences_output[113]
+		# print sequences_input[22], sequences_output[22]
 		print "================================="
 
 		return sequences_input, sequences_output

@@ -156,7 +156,9 @@ class RNNModel:
 
 	def initEmbeddings(self, emb_scope, token_vocab_size, embeddings_dim, reuse=False, pretrained_embeddings=None):
 		with tf.variable_scope(emb_scope, reuse=reuse):
-			if pretrained_embeddings!=None:
+			# print("HERE ARE THE PRETRAINED EMEBEDSSSSS::::::")
+			# print(pretrained_embeddings)
+			if pretrained_embeddings != None:
 				token_emb_mat = tf.get_variable("emb_mat", shape=[token_vocab_size, embeddings_dim], dtype='float', initializer=tf.constant_initializer(np.array(pretrained_embeddings)) )
 				token_emb_mat = tf.concat( [tf.zeros([1, embeddings_dim]), tf.slice(token_emb_mat, [1,0],[-1,-1]) ], axis=0 )	
 				print "USED  PRETRAINED MEBDDEING"	
@@ -165,6 +167,7 @@ class RNNModel:
 				# 0-mask
 				token_emb_mat = tf.concat( [tf.zeros([1, embeddings_dim]), tf.slice(token_emb_mat, [1,0],[-1,-1]) ], axis=0 )	
 				#print "token_emb_mat = ",token_emb_mat
+
 		return token_emb_mat
 
 	def greedyInferenceModel(self, params ):

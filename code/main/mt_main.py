@@ -113,12 +113,16 @@ def main():
 	#Pretrained embeddibngs
 	if params['pretrained_embeddings']:
 		pretrained_embeddings = pickle.load(open(params['pretrained_embeddings_path'],"r"))
+		print("Pretrained embeddings used : ")
+		print(params['pretrained_embeddings_path'])
 		word_to_idx = preprocessing.word_to_idx
 		encoder_embedding_matrix = np.random.rand( params['vocab_size'], params['embeddings_dim'] )
 		decoder_embedding_matrix = np.random.rand( params['vocab_size'], params['embeddings_dim'] )
 		not_found_count = 0
 		for token,idx in word_to_idx.items():
+			# print(token, idx)
 			if token in pretrained_embeddings:
+				# print("token is in pretrained")
 				encoder_embedding_matrix[idx]=pretrained_embeddings[token]
 				decoder_embedding_matrix[idx]=pretrained_embeddings[token]
 			else:
@@ -133,6 +137,9 @@ def main():
 			additional_count=0
 			tmp=[]
 			for token in pretrained_embeddings:
+				# print(token)
+				# print('printed token in question')
+
 				if token not in preprocessing.word_to_idx:
 					preprocessing.word_to_idx[token] = preprocessing.word_to_idx_ctr
 					preprocessing.idx_to_word[preprocessing.word_to_idx_ctr] = token
@@ -182,10 +189,12 @@ def main():
 		#print "val_encoder_inputs = ",val_encoder_inputs
 		if len(val_decoder_outputs.shape)==3:
 			val_decoder_outputs=np.reshape(val_decoder_outputs, (val_decoder_outputs.shape[0], val_decoder_outputs.shape[1]))
+		print('printing shape')
+		print(val_decoder_outputs.shape)
 		decoder_outputs_inference, decoder_ground_truth_outputs = rnn_model.solveAll(params, val_encoder_inputs, val_decoder_outputs, preprocessing.idx_to_word, inference_type=inference_type)        			   
-		validOutFile_name = saved_model_path+".valid.output"
-		original_data_path = data_src + "valid.original.nltktok"
-		BLEUOutputFile_path = saved_model_path + ".valid.BLEU"
+		validOutFile_name = saved_model_path+ ".redistributed.valid.output"
+		original_data_path = data_src + "redistributed.valid.original.nltktok"
+		BLEUOutputFile_path = saved_model_path + ".redistributed.valid.BLEU"
 		utilities.getBlue(validOutFile_name, original_data_path, BLEUOutputFile_path, decoder_outputs_inference, decoder_ground_truth_outputs, preprocessing)
 		print "VALIDATION: ",open(BLEUOutputFile_path,"r").read()		
 
@@ -194,15 +203,83 @@ def main():
 		if len(test_decoder_outputs.shape)==3:
 			test_decoder_outputs=np.reshape(test_decoder_outputs, (test_decoder_outputs.shape[0], test_decoder_outputs.shape[1]))
 		decoder_outputs_inference, decoder_ground_truth_outputs = rnn_model.solveAll(params, test_encoder_inputs, test_decoder_outputs, preprocessing.idx_to_word, inference_type=inference_type)
-		validOutFile_name = saved_model_path+".test.output"
-		original_data_path = data_src + "test.original.nltktok"
-		BLEUOutputFile_path = saved_model_path + ".test.BLEU"
+		validOutFile_name = saved_model_path+".redistributed.test.output"
+		original_data_path = data_src + "redistributed.test.original.nltktok"
+		BLEUOutputFile_path = saved_model_path + ".redistributed.test.BLEU"
+		###### mollsaltered
+		reverse_vocab = preprocessing.idx_to_word
+		print("printing incoder inputs and decoder inputs, outputs in test:::::")
+
+		# sent = [reverse_vocab[char] for char in test_encoder_inputs[0]]
+		# print(sent)
+
+		for i,row in enumerate(decoder_outputs_inference):
+			ret=""
+			for val in row:
+			    if val==2: break # sentend. TO DO: load this value from config
+			    ret+=( " " + reverse_vocab[val] )
+			#print "decoder_ground_truth_outputs[i] = ",decoder_ground_truth_outputs[i]
+			if i<len(decoder_ground_truth_outputs):
+				gt = [ reverse_vocab[j] for j in decoder_ground_truth_outputs[i] if reverse_vocab[j]!="padword"]
+				print "GT: ", gt
+				print "prediction: ",ret
+				print ""
+				if i>20:
+					break
+
+		##### mollsaltered
 		utilities.getBlue(validOutFile_name, original_data_path, BLEUOutputFile_path, decoder_outputs_inference, decoder_ground_truth_outputs, preprocessing)
 		print "TEST: ",open(BLEUOutputFile_path,"r").read()		
+	elif mode=="inferenceOnNonShakespeare":
+		saved_model_path = sys.argv[2]
+		print "saved_model_path = ",saved_model_path
+		inference_type = sys.argv[3] # greedy / beam
+		print "inference_type = ",inference_type
+		params['saved_model_path'] = saved_model_path
+		rnn_model = solver.Solver(params, buckets=None, mode='inference')
+		_ = rnn_model.getModel(params, mode='inference', reuse=False, buckets=None)
+		print "----Running inference-----"
+		#test
+		####
+		testS = {"testNonShakespeare"}
+		data_seq = {split:preprocessing.loadData(split=split) for split in testS}			
+		data = { split:preprocessing.prepareMTData(cur_data) for split,cur_data in data_seq.items()  }
+		testNonShakespeare = data['testNonShakespeare']
 
+		####
+		test_encoder_inputs, test_decoder_inputs, test_decoder_outputs, test_decoder_outputs_matching_inputs = testNonShakespeare
+		if len(test_decoder_outputs.shape)==3:
+			test_decoder_outputs=np.reshape(test_decoder_outputs, (test_decoder_outputs.shape[0], test_decoder_outputs.shape[1]))
+		decoder_outputs_inference, decoder_ground_truth_outputs = rnn_model.solveAll(params, test_encoder_inputs, test_decoder_outputs, preprocessing.idx_to_word, inference_type=inference_type)
+		###### mollsaltered
+		reverse_vocab = preprocessing.idx_to_word
+		
+		shakespearizedPassage = []
+		for i,row in enumerate(decoder_outputs_inference):
+			ret=""
+			for val in row:
+			    if val==2: break # sentend. TO DO: load this value from config
+			    ret+=( " " + reverse_vocab[val] )
+			#print "decoder_ground_truth_outputs[i] = ",decoder_ground_truth_outputs[i]
+			if i<len(decoder_ground_truth_outputs):
+				gt = [ reverse_vocab[j] for j in decoder_ground_truth_outputs[i] if reverse_vocab[j]!="padword"]
+				# print "test on input GT: ", gt
+				# print "Shakespearized prediction: ",ret
+				# print ""
+				shakespearizedPassage.append(ret)
+				if i>20:
+					break
+
+		print("Your original passage would look like:")
+		for line in shakespearizedPassage:
+			print(line)
+			
 	else:
 		print "Please see usage"
 
 
 if __name__ == "__main__":
+	print("pretrained embeds are")
+	print(config.pretrained_embeddings_path)
 	main()
+

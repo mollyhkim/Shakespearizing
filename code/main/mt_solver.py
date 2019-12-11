@@ -65,6 +65,8 @@ class Solver:
 				reuse=True
 
 			self.encoder_outputs = encoder_outputs = self.model_obj.getEncoderModel(config, mode='inference', reuse=True )
+			print("molls printline1")
+			print(encoder_outputs)
 			decoder_outputs_inference, encoder_outputs, self.alpha_inference = self.model_obj.getDecoderModel(config, encoder_outputs, is_training=False, mode='inference', reuse=True)	
 			self.decoder_outputs_inference = decoder_outputs_inference
 			
@@ -227,9 +229,7 @@ class Solver:
 		else:# beam
 			batch_size = 8
 		num_batches = ( len(encoder_inputs) + batch_size - 1)/ batch_size 
-		#print "num_batches = ",num_batches
-		#print "batch_size = ", batch_size 
-		#print "len(encoder_inputs) = ",len(encoder_inputs)
+		
 		decoder_outputs_inference = []
 		alpha = []
 		for i in range(num_batches):
@@ -294,9 +294,9 @@ class Solver:
 	def getBleuOnVal(self, params, reverse_vocab, val_feed, sess, model_name):
 		val_encoder_inputs, val_decoder_inputs, val_decoder_outputs, val_decoder_outputs_matching_inputs = val_feed
 		decoder_outputs_inference, decoder_ground_truth_outputs = self.solveAll(params, val_encoder_inputs, val_decoder_outputs, reverse_vocab, sess=sess, print_progress=False)        			   
-		validOutFile_name = "./tmp/tmp_" + model_name +".valid.output"
-		original_data_path = data_dir + "valid.original.nltktok"
-		BLEUOutputFile_path = "./tmp/tmp_" + model_name + ".valid.BLEU"
+		validOutFile_name = "./tmp/tmp_" + model_name +".redistributed.valid.output"
+		original_data_path = data_dir + "redistributed.valid.original.nltktok"
+		BLEUOutputFile_path = "./tmp/tmp_" + model_name + ".redistributed.valid.BLEU"
 		utilities.getBlue(validOutFile_name, original_data_path, BLEUOutputFile_path, decoder_outputs_inference, decoder_ground_truth_outputs, params['preprocessing'])
 		return open(BLEUOutputFile_path,"r").read()
 
